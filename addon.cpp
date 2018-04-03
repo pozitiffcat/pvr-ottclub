@@ -1,10 +1,18 @@
 #include "addon.h"
 
+#include <sstream>
 #include "OTTClient.h"
 
 static ADDON::CHelper_libXBMC_addon *XBMC = NULL;
 static CHelper_libXBMC_pvr *PVR = NULL;
 static OTTClient ottClient;
+
+static std::string to_string(int i)
+{
+    std::stringstream stream;
+    stream << i;
+    return stream.str();
+}
 
 extern "C"
 {
@@ -78,8 +86,8 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
         memset(&channelEntry, 0, sizeof(PVR_CHANNEL));
 
         channelEntry.bIsRadio = false;
-        channelEntry.iChannelNumber = std::atoi(channel.id.c_str());
-        channelEntry.iUniqueId = std::atoi(channel.id.c_str());
+        channelEntry.iChannelNumber = atoi(channel.id.c_str());
+        channelEntry.iUniqueId = atoi(channel.id.c_str());
         strcpy(channelEntry.strChannelName, channel.name.c_str());
         strcpy(channelEntry.strStreamURL, channel.url.c_str());
         strcpy(channelEntry.strIconPath, channel.icon.c_str());
@@ -92,7 +100,7 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 
 PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
 {
-    OTTClient::Channel channel = ottClient.fetchPrograms(std::to_string(channelEntry.iUniqueId));
+    OTTClient::Channel channel = ottClient.fetchPrograms(to_string(channelEntry.iUniqueId));
 
     for (int i = 0; i < channel.programs.size(); ++i)
     {
@@ -104,7 +112,7 @@ PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry,
 
             epgEntry.startTime = program.time;
             epgEntry.endTime = program.timeTo;
-            epgEntry.iChannelNumber = std::atoi(channel.id.c_str());
+            epgEntry.iChannelNumber = atoi(channel.id.c_str());
             epgEntry.iUniqueBroadcastId = i + 1;
             epgEntry.strTitle = program.name.c_str();
 
