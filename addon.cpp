@@ -83,6 +83,7 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
         channelEntry.iUniqueId = std::atoi(channel.id.c_str());
         strcpy(channelEntry.strChannelName, channel.name.c_str());
         strcpy(channelEntry.strStreamURL, channel.url.c_str());
+        strcpy(channelEntry.strIconPath, channel.icon.c_str());
 
         PVR->TransferChannelEntry(handle, &channelEntry);
     }

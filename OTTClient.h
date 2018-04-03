@@ -21,6 +21,7 @@ public:
         std::string id;
         std::string name;
         std::string url;
+        std::string icon;
         std::vector<Program> programs;
     };
 

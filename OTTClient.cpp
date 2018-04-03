@@ -43,6 +43,7 @@ void OTTClient::fetch()
         channel.id = channelJson["ch_id"].asString();
         channel.name = channelJson["channel_name"].asString();
         channel.url = "http://spacetv.in/stream/BES5W7VUMB/" + channel.id + ".m3u8";
+        channel.icon = "http://ott.watch/images/" + channelJson["img"].asString();
 
         Program program;
         program.name = channelJson["name"].asString();
