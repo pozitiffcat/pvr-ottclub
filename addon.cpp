@@ -1,7 +1,6 @@
-#include "xbmc_pvr_dll.h"
-#include "libXBMC_addon.h"
-#include "libXBMC_pvr.h"
-#include "libKODI_guilib.h"
+#include "addon.h"
+
+static CHelper_libXBMC_pvr *PVR = NULL;
 
 extern "C"
 {
@@ -10,14 +9,70 @@ extern "C"
 
 ADDON_STATUS ADDON_Create(void *callbacks, void *props)
 {
+    PVR = new CHelper_libXBMC_pvr;
+    if (!PVR->RegisterMe(callbacks))
+    {
+        ADDON_Destroy();
+        return ADDON_STATUS_PERMANENT_FAILURE;
+    }
+
     return ADDON_STATUS_OK;
 }
 
-void ADDON_Stop()
+void ADDON_Destroy()
 {
+    delete PVR;
+    PVR = NULL;
 }
 
-void ADDON_Destroy()
+PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
+{
+    pCapabilities->bHandlesDemuxing = false;
+    pCapabilities->bHandlesInputStream = false;
+    pCapabilities->bSupportsChannelGroups = false;
+    pCapabilities->bSupportsChannelScan = false;
+    pCapabilities->bSupportsChannelSettings = false;
+    pCapabilities->bSupportsEPG = true;
+    pCapabilities->bSupportsLastPlayedPosition = false;
+    pCapabilities->bSupportsRadio = false;
+    pCapabilities->bSupportsRecordingEdl = false;
+    pCapabilities->bSupportsRecordingPlayCount = false;
+    pCapabilities->bSupportsRecordings = false;
+    pCapabilities->bSupportsRecordingsUndelete = false;
+    pCapabilities->bSupportsTimers = false;
+    pCapabilities->bSupportsTV = true;
+    return PVR_ERROR_NO_ERROR;
+}
+
+int GetChannelsAmount(void)
+{
+    return 1;
+}
+
+PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
+{
+    PVR_CHANNEL entry;
+    entry.bIsHidden = false;
+    entry.bIsRadio = false;
+    entry.iChannelNumber = 0;
+    entry.iEncryptionSystem = 0;
+    entry.iSubChannelNumber = 0;
+    entry.iUniqueId = 131;
+    strcpy(entry.strChannelName, "Первый канал");
+//    strcpy(entry.strIconPath, "");
+//    strcpy(entry.strInputFormat, "HTTP");
+    strcpy(entry.strStreamURL, "http://spacetv.in/stream/BES5W7VUMB/131.m3u8");
+
+    PVR->TransferChannelEntry(handle, &entry);
+
+    return PVR_ERROR_NO_ERROR;
+}
+
+// ------------------------------------------- UNUSED ----------------------------------------------
+
+// ADDON
+
+void ADDON_Stop()
 {
 }
 
@@ -67,25 +122,6 @@ const char* GetMininumGUIAPIVersion(void)
     return KODI_GUILIB_MIN_API_VERSION;
 }
 
-PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
-{
-    pCapabilities->bHandlesDemuxing = false;
-    pCapabilities->bHandlesInputStream = false;
-    pCapabilities->bSupportsChannelGroups = false;
-    pCapabilities->bSupportsChannelScan = false;
-    pCapabilities->bSupportsChannelSettings = false;
-    pCapabilities->bSupportsEPG = true;
-    pCapabilities->bSupportsLastPlayedPosition = false;
-    pCapabilities->bSupportsRadio = false;
-    pCapabilities->bSupportsRecordingEdl = false;
-    pCapabilities->bSupportsRecordingPlayCount = false;
-    pCapabilities->bSupportsRecordings = false;
-    pCapabilities->bSupportsRecordingsUndelete = false;
-    pCapabilities->bSupportsTimers = false;
-    pCapabilities->bSupportsTV = true;
-    return PVR_ERROR_NO_ERROR;
-}
-
 const char* GetBackendName(void)
 {
     return "";
@@ -132,16 +168,6 @@ PVR_ERROR GetChannelGroupMembers(ADDON_HANDLE handle, const PVR_CHANNEL_GROUP& g
 }
 
 PVR_ERROR OpenDialogChannelScan(void)
-{
-    return PVR_ERROR_NOT_IMPLEMENTED;
-}
-
-int GetChannelsAmount(void)
-{
-    return 0;
-}
-
-PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 {
     return PVR_ERROR_NOT_IMPLEMENTED;
 }
