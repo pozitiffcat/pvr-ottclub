@@ -27,9 +27,6 @@ ADDON_STATUS ADDON_Create(void *callbacks, void *props)
         return ADDON_STATUS_PERMANENT_FAILURE;
     }
 
-    ottClient.fetchChannels();
-    ottClient.fetchPrograms();
-
     return ADDON_STATUS_OK;
 }
 
@@ -68,6 +65,8 @@ int GetChannelsAmount(void)
 
 PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 {
+    ottClient.fetchChannels();
+
     if (bRadio)
         return PVR_ERROR_NOT_IMPLEMENTED;
 
@@ -93,7 +92,7 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 
 PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
 {
-    const OTTClient::Channel channel = ottClient.channelById(std::to_string(channelEntry.iUniqueId));
+    OTTClient::Channel channel = ottClient.fetchPrograms(std::to_string(channelEntry.iUniqueId));
 
     for (int i = 0; i < channel.programs.size(); ++i)
     {

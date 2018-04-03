@@ -23,15 +23,21 @@ public:
         std::string url;
         std::string icon;
         std::vector<Program> programs;
+
+        bool isValid() const
+        {
+            return !id.empty();
+        }
     };
 
 public:
     OTTClient();
 
     void fetchChannels();
-    void fetchPrograms();
+    Channel fetchPrograms(const std::string &channelId);
 
-    Channel channel(int index) const;
+    const Channel &channel(int index) const;
+    Channel &channelById(const std::string &id, const Channel &def);
     Channel channelById(const std::string &id) const;
 
     int channelsCount() const;

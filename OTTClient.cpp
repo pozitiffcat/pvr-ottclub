@@ -3,7 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <curl/curl.h>
-#include "json/json.h"
+#include <json/json.h>
 
 static int writer(char *data, size_t size, size_t nmemb, std::string *writerData)
 {
@@ -48,44 +48,52 @@ void OTTClient::fetchChannels()
     }
 }
 
-void OTTClient::fetchPrograms()
+OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
 {
+    Channel channel;
+
     for (int i = 0; i < m_channels.size(); ++i)
     {
-        Channel &channel = m_channels[i];
-
-        std::string buffer;
-
-        CURL *curl = curl_easy_init();
-        curl_easy_setopt(curl, CURLOPT_URL, ("http://ott.watch/api/channel/" + channel.id).c_str());
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-        curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        std::stringstream bufferStream(buffer);
-
-        Json::Value rootJson;
-        bufferStream >> rootJson;
-        rootJson = rootJson["epg_data"];
-
-        for (Json::Value::iterator it = rootJson.begin(); it != rootJson.end(); ++it)
-        {
-            const Json::Value &programJson = (*it);
-
-            Program program;
-            program.name = programJson["name"].asString();
-            program.duration = programJson["duration"].asString();
-            program.description = programJson["descr"].asString();
-            program.time = programJson["time"].asInt64();;
-            program.timeTo = programJson["time_to"].asInt64();
-            channel.programs.push_back(program);
-        }
+        if (m_channels[i].id == channelId)
+            channel = m_channels[i];
     }
+
+    if (!channel.isValid())
+        return channel;
+
+    std::string buffer;
+
+    CURL *curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_URL, ("http://ott.watch/api/channel/" + channel.id).c_str());
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+    curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    std::stringstream bufferStream(buffer);
+
+    Json::Value rootJson;
+    bufferStream >> rootJson;
+    rootJson = rootJson["epg_data"];
+
+    for (Json::Value::iterator it = rootJson.begin(); it != rootJson.end(); ++it)
+    {
+        const Json::Value &programJson = (*it);
+
+        Program program;
+        program.name = programJson["name"].asString();
+        program.duration = programJson["duration"].asString();
+        program.description = programJson["descr"].asString();
+        program.time = programJson["time"].asInt64();;
+        program.timeTo = programJson["time_to"].asInt64();
+        channel.programs.push_back(program);
+    }
+
+    return channel;
 }
 
-OTTClient::Channel OTTClient::channel(int index) const
+const OTTClient::Channel &OTTClient::channel(int index) const
 {
     return m_channels[index];
 }
