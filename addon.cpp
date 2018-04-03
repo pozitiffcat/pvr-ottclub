@@ -1,6 +1,10 @@
 #include "addon.h"
 
+#include "OTTClient.h"
+
+static ADDON::CHelper_libXBMC_addon *XBMC = NULL;
 static CHelper_libXBMC_pvr *PVR = NULL;
+static OTTClient ottClient;
 
 extern "C"
 {
@@ -9,6 +13,13 @@ extern "C"
 
 ADDON_STATUS ADDON_Create(void *callbacks, void *props)
 {
+    XBMC = new ADDON::CHelper_libXBMC_addon;
+    if (!XBMC->RegisterMe(callbacks))
+    {
+        ADDON_Destroy();
+        return ADDON_STATUS_PERMANENT_FAILURE;
+    }
+
     PVR = new CHelper_libXBMC_pvr;
     if (!PVR->RegisterMe(callbacks))
     {
@@ -16,11 +27,16 @@ ADDON_STATUS ADDON_Create(void *callbacks, void *props)
         return ADDON_STATUS_PERMANENT_FAILURE;
     }
 
+    ottClient.fetch();
+
     return ADDON_STATUS_OK;
 }
 
 void ADDON_Destroy()
 {
+    delete XBMC;
+    XBMC = NULL;
+
     delete PVR;
     PVR = NULL;
 }
@@ -46,24 +62,63 @@ PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
 
 int GetChannelsAmount(void)
 {
-    return 1;
+    return ottClient.channelsCount();
 }
 
 PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 {
-    PVR_CHANNEL entry;
-    entry.bIsHidden = false;
-    entry.bIsRadio = false;
-    entry.iChannelNumber = 0;
-    entry.iEncryptionSystem = 0;
-    entry.iSubChannelNumber = 0;
-    entry.iUniqueId = 131;
-    strcpy(entry.strChannelName, "Первый канал");
-//    strcpy(entry.strIconPath, "");
-//    strcpy(entry.strInputFormat, "HTTP");
-    strcpy(entry.strStreamURL, "http://spacetv.in/stream/BES5W7VUMB/131.m3u8");
+    if (bRadio)
+        return PVR_ERROR_NOT_IMPLEMENTED;
 
-    PVR->TransferChannelEntry(handle, &entry);
+    for (int i = 0; i < ottClient.channelsCount(); ++i)
+    {
+        const OTTClient::Channel channel = ottClient.channel(i);
+
+        PVR_CHANNEL channelEntry;
+        channelEntry.bIsHidden = false;
+        channelEntry.bIsRadio = false;
+        channelEntry.iChannelNumber = std::atoi(channel.id.c_str());
+        channelEntry.iEncryptionSystem = 0;
+        channelEntry.iSubChannelNumber = 0;
+        channelEntry.iUniqueId = std::atoi(channel.id.c_str());
+        strcpy(channelEntry.strChannelName, channel.name.c_str());
+        strcpy(channelEntry.strStreamURL, channel.url.c_str());
+
+        PVR->TransferChannelEntry(handle, &channelEntry);
+    }
+
+    return PVR_ERROR_NO_ERROR;
+}
+
+PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
+{
+    const OTTClient::Channel channel = ottClient.channelById(std::to_string(channelEntry.iUniqueId));
+    const OTTClient::Program program = channel.programs.size() > 0 ? channel.programs.at(0) : OTTClient::Program();
+
+    if (program.time > iStart && program.time < iEnd)
+    {
+        EPG_TAG epgEntry;
+        epgEntry.startTime = program.time;
+        epgEntry.endTime = program.timeTo;
+        epgEntry.bNotify = false;
+        epgEntry.firstAired = false;
+        epgEntry.iChannelNumber = std::atoi(channel.id.c_str());
+        epgEntry.iEpisodeNumber = 0;
+        epgEntry.iEpisodePartNumber = 0;
+        epgEntry.iFlags = 0;
+        epgEntry.iGenreSubType = 0;
+        epgEntry.iGenreType = 0;
+        epgEntry.iParentalRating = 0;
+        epgEntry.iSeriesNumber = 0;
+        epgEntry.iStarRating = 0;
+        epgEntry.iUniqueBroadcastId = std::atoi(channel.id.c_str());
+        epgEntry.iYear = 0;
+        epgEntry.strOriginalTitle = program.name.c_str();
+        epgEntry.strTitle = program.name.c_str();
+        epgEntry.strPlot = program.name.c_str();
+
+        PVR->TransferEpgEntry(handle, &epgEntry);
+    }
 
     return PVR_ERROR_NO_ERROR;
 }
@@ -143,11 +198,6 @@ PVR_ERROR GetDriveSpace(long long* iTotal, long long* iUsed)
 }
 
 PVR_ERROR CallMenuHook(const PVR_MENUHOOK& menuhook, const PVR_MENUHOOK_DATA &item)
-{
-    return PVR_ERROR_NOT_IMPLEMENTED;
-}
-
-PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channel, time_t iStart, time_t iEnd)
 {
     return PVR_ERROR_NOT_IMPLEMENTED;
 }
