@@ -18,7 +18,7 @@ OTTClient::OTTClient()
 {
 }
 
-void OTTClient::fetch()
+void OTTClient::fetchChannels()
 {
     std::string buffer;
 
@@ -44,16 +44,44 @@ void OTTClient::fetch()
         channel.name = channelJson["channel_name"].asString();
         channel.url = "http://spacetv.in/stream/BES5W7VUMB/" + channel.id + ".m3u8";
         channel.icon = "http://ott.watch/images/" + channelJson["img"].asString();
-
-        Program program;
-        program.name = channelJson["name"].asString();
-        program.duration = channelJson["duration"].asString();
-        program.description = channelJson["descr"].asString();
-        program.time = channelJson["time"].asInt64();;
-        program.timeTo = channelJson["time_to"].asInt64();
-
-        channel.programs.push_back(program);
         m_channels.push_back(channel);
+    }
+}
+
+void OTTClient::fetchPrograms()
+{
+    for (int i = 0; i < m_channels.size(); ++i)
+    {
+        Channel &channel = m_channels[i];
+
+        std::string buffer;
+
+        CURL *curl = curl_easy_init();
+        curl_easy_setopt(curl, CURLOPT_URL, ("http://ott.watch/api/channel/" + channel.id).c_str());
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+        curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        std::stringstream bufferStream(buffer);
+
+        Json::Value rootJson;
+        bufferStream >> rootJson;
+        rootJson = rootJson["epg_data"];
+
+        for (Json::Value::iterator it = rootJson.begin(); it != rootJson.end(); ++it)
+        {
+            const Json::Value &programJson = (*it);
+
+            Program program;
+            program.name = programJson["name"].asString();
+            program.duration = programJson["duration"].asString();
+            program.description = programJson["descr"].asString();
+            program.time = programJson["time"].asInt64();;
+            program.timeTo = programJson["time_to"].asInt64();
+            channel.programs.push_back(program);
+        }
     }
 }
 

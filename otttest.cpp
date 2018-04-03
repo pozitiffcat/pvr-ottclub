@@ -3,6 +3,7 @@
 int main()
 {
     OTTClient client;
-    client.fetch();
+    client.fetchChannels();
+    client.fetchPrograms();
     return 0;
 }

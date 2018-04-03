@@ -28,7 +28,8 @@ public:
 public:
     OTTClient();
 
-    void fetch();
+    void fetchChannels();
+    void fetchPrograms();
 
     Channel channel(int index) const;
     Channel channelById(const std::string &id) const;

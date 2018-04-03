@@ -27,7 +27,8 @@ ADDON_STATUS ADDON_Create(void *callbacks, void *props)
         return ADDON_STATUS_PERMANENT_FAILURE;
     }
 
-    ottClient.fetch();
+    ottClient.fetchChannels();
+    ottClient.fetchPrograms();
 
     return ADDON_STATUS_OK;
 }
@@ -75,11 +76,10 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
         const OTTClient::Channel channel = ottClient.channel(i);
 
         PVR_CHANNEL channelEntry;
-        channelEntry.bIsHidden = false;
+        memset(&channelEntry, 0, sizeof(PVR_CHANNEL));
+
         channelEntry.bIsRadio = false;
         channelEntry.iChannelNumber = std::atoi(channel.id.c_str());
-        channelEntry.iEncryptionSystem = 0;
-        channelEntry.iSubChannelNumber = 0;
         channelEntry.iUniqueId = std::atoi(channel.id.c_str());
         strcpy(channelEntry.strChannelName, channel.name.c_str());
         strcpy(channelEntry.strStreamURL, channel.url.c_str());
@@ -94,31 +94,23 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
 {
     const OTTClient::Channel channel = ottClient.channelById(std::to_string(channelEntry.iUniqueId));
-    const OTTClient::Program program = channel.programs.size() > 0 ? channel.programs.at(0) : OTTClient::Program();
 
-    if (program.time > iStart && program.time < iEnd)
+    for (int i = 0; i < channel.programs.size(); ++i)
     {
-        EPG_TAG epgEntry;
-        epgEntry.startTime = program.time;
-        epgEntry.endTime = program.timeTo;
-        epgEntry.bNotify = false;
-        epgEntry.firstAired = false;
-        epgEntry.iChannelNumber = std::atoi(channel.id.c_str());
-        epgEntry.iEpisodeNumber = 0;
-        epgEntry.iEpisodePartNumber = 0;
-        epgEntry.iFlags = 0;
-        epgEntry.iGenreSubType = 0;
-        epgEntry.iGenreType = 0;
-        epgEntry.iParentalRating = 0;
-        epgEntry.iSeriesNumber = 0;
-        epgEntry.iStarRating = 0;
-        epgEntry.iUniqueBroadcastId = std::atoi(channel.id.c_str());
-        epgEntry.iYear = 0;
-        epgEntry.strOriginalTitle = program.name.c_str();
-        epgEntry.strTitle = program.name.c_str();
-        epgEntry.strPlot = program.name.c_str();
+        const OTTClient::Program &program = channel.programs[i];
+        if (program.time >= iStart && program.time <= iEnd)
+        {
+            EPG_TAG epgEntry;
+            memset(&epgEntry, 0, sizeof(EPG_TAG));
 
-        PVR->TransferEpgEntry(handle, &epgEntry);
+            epgEntry.startTime = program.time;
+            epgEntry.endTime = program.timeTo;
+            epgEntry.iChannelNumber = std::atoi(channel.id.c_str());
+            epgEntry.iUniqueBroadcastId = i + 1;
+            epgEntry.strTitle = program.name.c_str();
+
+            PVR->TransferEpgEntry(handle, &epgEntry);
+        }
     }
 
     return PVR_ERROR_NO_ERROR;
