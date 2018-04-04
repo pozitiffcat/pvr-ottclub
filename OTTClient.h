@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+class HttpRequestBuilder;
+
 class OTTClient
 {
 public:
@@ -31,7 +33,7 @@ public:
     };
 
 public:
-    OTTClient();
+    explicit OTTClient(HttpRequestBuilder *httpRequestBuilder);
 
     void fetchChannels();
     Channel fetchPrograms(const std::string &channelId);
@@ -43,6 +45,7 @@ public:
     int channelsCount() const;
 
 private:
+    HttpRequestBuilder *m_httpRequestBuilder;
     std::vector<Channel> m_channels;
 };
 

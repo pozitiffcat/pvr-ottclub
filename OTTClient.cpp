@@ -2,36 +2,21 @@
 
 #include <sstream>
 #include <iostream>
-#include <curl/curl.h>
+
 #include "jparsers/jparsers.h"
 #include "jparsers/jobject.h"
 #include "jparsers/jarray.h"
 
-static int writer(char *data, size_t size, size_t nmemb, std::string *writerData)
-{
-    if(writerData == NULL)
-        return 0;
+#include "HttpRequestBuilder.h"
 
-    writerData->append(data, size * nmemb);
-    return size * nmemb;
-}
-
-OTTClient::OTTClient()
+OTTClient::OTTClient(HttpRequestBuilder *httpRequestBuilder)
+    : m_httpRequestBuilder(httpRequestBuilder)
 {
 }
 
 void OTTClient::fetchChannels()
 {
-    std::string buffer;
-
-    CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, "http://ott.watch/api/channel_now");
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-    curl_easy_perform(curl);
-    curl_easy_cleanup(curl);
-
+    std::string buffer = m_httpRequestBuilder->doGetRequest("http://ott.watch/api/channel_now");
     std::stringstream bufferStream(buffer);
 
     jobject *rootJson = 0;
@@ -82,16 +67,7 @@ OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
     if (!channel->isValid())
         return Channel();
 
-    std::string buffer;
-
-    CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, ("http://ott.watch/api/channel/" + channel->id).c_str());
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-    curl_easy_perform(curl);
-    curl_easy_cleanup(curl);
-
+    std::string buffer = m_httpRequestBuilder->doGetRequest("http://ott.watch/api/channel/" + channel->id);
     std::stringstream bufferStream(buffer);
 
     jobject *rootJson = 0;

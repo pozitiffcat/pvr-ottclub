@@ -19,8 +19,7 @@ include_directories(
     "${XBMC_ROOT}/xbmc/addons/kodi-addon-dev-kit/include/kodi"
     "${XBMC_ROOT}/xbmc")
 
-add_library(${PROJECT_NAME} SHARED ${S_JSON_SRC_LIST} "addon.cpp" "OTTClient.cpp")
-target_link_libraries(${PROJECT_NAME} curl)
+add_library(${PROJECT_NAME} SHARED ${S_JSON_SRC_LIST} "addon.cpp" "OTTClient.cpp" "XBMCHttpRequestBuilder.cpp")
 
-add_executable(otttest ${S_JSON_SRC_LIST} "otttest.cpp" "OTTClient.cpp")
+add_executable(otttest ${S_JSON_SRC_LIST} "otttest.cpp" "OTTClient.cpp" "CurlHttpRequestBuilder.cpp")
 target_link_libraries(otttest curl)

@@ -1,11 +1,14 @@
 #include "addon.h"
 
 #include <sstream>
+
 #include "OTTClient.h"
+#include "XBMCHttpRequestBuilder.h"
 
 static ADDON::CHelper_libXBMC_addon *XBMC = NULL;
 static CHelper_libXBMC_pvr *PVR = NULL;
-static OTTClient ottClient;
+static HttpRequestBuilder *httpRequestBuilder = NULL;
+static OTTClient *ottClient = NULL;
 
 static std::string to_string(int i)
 {
@@ -35,6 +38,9 @@ ADDON_STATUS ADDON_Create(void *callbacks, void *props)
         return ADDON_STATUS_PERMANENT_FAILURE;
     }
 
+    httpRequestBuilder = new XBMCHttpRequestBuilder(XBMC);
+    ottClient = new OTTClient(httpRequestBuilder);
+
     return ADDON_STATUS_OK;
 }
 
@@ -45,6 +51,12 @@ void ADDON_Destroy()
 
     delete PVR;
     PVR = NULL;
+
+    delete httpRequestBuilder;
+    httpRequestBuilder = NULL;
+
+    delete ottClient;
+    ottClient = NULL;
 }
 
 PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
@@ -68,19 +80,19 @@ PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
 
 int GetChannelsAmount(void)
 {
-    return ottClient.channelsCount();
+    return ottClient->channelsCount();
 }
 
 PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 {
-    ottClient.fetchChannels();
+    ottClient->fetchChannels();
 
     if (bRadio)
         return PVR_ERROR_NOT_IMPLEMENTED;
 
-    for (int i = 0; i < ottClient.channelsCount(); ++i)
+    for (int i = 0; i < ottClient->channelsCount(); ++i)
     {
-        const OTTClient::Channel channel = ottClient.channel(i);
+        const OTTClient::Channel channel = ottClient->channel(i);
 
         PVR_CHANNEL channelEntry;
         memset(&channelEntry, 0, sizeof(PVR_CHANNEL));
@@ -100,7 +112,7 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 
 PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
 {
-    OTTClient::Channel channel = ottClient.fetchPrograms(to_string(channelEntry.iUniqueId));
+    OTTClient::Channel channel = ottClient->fetchPrograms(to_string(channelEntry.iUniqueId));
 
     for (int i = 0; i < channel.programs.size(); ++i)
     {

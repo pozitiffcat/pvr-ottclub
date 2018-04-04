@@ -1,8 +1,11 @@
 #include "OTTClient.h"
 
+#include "CurlHttpRequestBuilder.h"
+
 int main()
 {
-    OTTClient c;
+    CurlHttpRequestBuilder httpBuilder;
+    OTTClient c(&httpBuilder);
     c.fetchChannels();
 
     for (int i = 0; i < c.channelsCount(); ++i)
