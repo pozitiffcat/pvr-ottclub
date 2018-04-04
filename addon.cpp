@@ -115,6 +115,7 @@ PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry,
             epgEntry.iChannelNumber = atoi(channel.id.c_str());
             epgEntry.iUniqueBroadcastId = program.time;
             epgEntry.strTitle = program.name.c_str();
+            epgEntry.strPlot = program.description.c_str();
 
             PVR->TransferEpgEntry(handle, &epgEntry);
         }
