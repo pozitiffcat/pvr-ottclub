@@ -1,0 +1,3 @@
+[submodule "jparsers"]
+	path = jparsers
+	url = http://git.malcdevelop.ru/alexey/jparsers.git

@@ -3,7 +3,9 @@
 #include <sstream>
 #include <iostream>
 #include <curl/curl.h>
-#include <json/json.h>
+#include "jparsers/jparsers.h"
+#include "jparsers/jobject.h"
+#include "jparsers/jarray.h"
 
 static int writer(char *data, size_t size, size_t nmemb, std::string *writerData)
 {
@@ -32,39 +34,58 @@ void OTTClient::fetchChannels()
 
     std::stringstream bufferStream(buffer);
 
-    Json::Value rootJson;
-    bufferStream >> rootJson;
+    jobject *rootJson = 0;
 
-    for (Json::Value::iterator it = rootJson.begin(); it != rootJson.end(); ++it)
+    try
     {
-        const Json::Value &channelJson = *it;
-
-        Channel channel;
-        channel.id = channelJson["ch_id"].asString();
-        channel.name = channelJson["channel_name"].asString();
-        channel.url = "http://spacetv.in/stream/BES5W7VUMB/" + channel.id + ".m3u8";
-        channel.icon = "http://ott.watch/images/" + channelJson["img"].asString();
-        m_channels.push_back(channel);
+        rootJson = jparsers::read_object(bufferStream);
     }
+    catch (const std::runtime_error &)
+    {
+        return;
+    }
+
+    std::vector<std::pair<std::string, jvalue *> > pairs = rootJson->to_pairs();
+    for (std::vector<std::pair<std::string, jvalue *> >::const_iterator it = pairs.begin(); it != pairs.end(); ++it)
+    {
+        try
+        {
+            const jobject *channelObject = it->second->as_object();
+            Channel channel;
+            channel.id = channelObject->value("ch_id")->as_string();
+            channel.name = channelObject->value("channel_name")->as_string();
+            channel.url = "http://spacetv.in/stream/BES5W7VUMB/" + channel.id + ".m3u8";
+            channel.icon = "http://ott.watch/images/" + channelObject->value("img")->as_string();
+            m_channels.push_back(channel);
+        }
+        catch (const std::runtime_error &)
+        {
+        }
+    }
+
+    delete rootJson;
 }
 
 OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
 {
-    Channel channel;
+    Channel *channel;
 
     for (int i = 0; i < m_channels.size(); ++i)
     {
         if (m_channels[i].id == channelId)
-            channel = m_channels[i];
+        {
+            channel = &m_channels[i];
+            break;
+        }
     }
 
-    if (!channel.isValid())
-        return channel;
+    if (!channel->isValid())
+        return Channel();
 
     std::string buffer;
 
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, ("http://ott.watch/api/channel/" + channel.id).c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, ("http://ott.watch/api/channel/" + channel->id).c_str());
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writer);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
@@ -73,24 +94,39 @@ OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
 
     std::stringstream bufferStream(buffer);
 
-    Json::Value rootJson;
-    bufferStream >> rootJson;
-    rootJson = rootJson["epg_data"];
+    jobject *rootJson = 0;
+    const jarray *arrayJson = 0;
 
-    for (Json::Value::iterator it = rootJson.begin(); it != rootJson.end(); ++it)
+    try
     {
-        const Json::Value &programJson = (*it);
-
-        Program program;
-        program.name = programJson["name"].asString();
-        program.duration = programJson["duration"].asString();
-        program.description = programJson["descr"].asString();
-        program.time = programJson["time"].asInt64();;
-        program.timeTo = programJson["time_to"].asInt64();
-        channel.programs.push_back(program);
+        rootJson = jparsers::read_object(bufferStream);
+        arrayJson = rootJson->value("epg_data")->as_array();
+    }
+    catch (const std::runtime_error &)
+    {
+        return Channel();
     }
 
-    return channel;
+    for (int i = 0; i < arrayJson->count(); ++i)
+    {
+        try
+        {
+            const jobject *programJson = arrayJson->value(i)->as_object();
+            Program program;
+            program.name = programJson->value("name")->as_string();
+            program.duration = programJson->value("duration")->as_string();
+            program.description = programJson->value("descr")->as_string();
+            program.time = programJson->value("time")->as_number();
+            program.timeTo = programJson->value("time_to")->as_number();
+            channel->programs.push_back(program);
+        }
+        catch (const std::runtime_error &)
+        {
+        }
+    }
+
+    delete rootJson;
+    return *channel;
 }
 
 const OTTClient::Channel &OTTClient::channel(int index) const
