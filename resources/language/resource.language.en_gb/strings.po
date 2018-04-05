@@ -1,0 +1,16 @@
+# Kodi Media Center language file
+# Addon Name: PVR OTTClub Client
+# Addon id: pvr.ottclub
+# Addon Provider: malcdevelop
+msgid ""
+msgstr ""
+
+#settings labels
+
+msgctxt "#30001"
+msgid "Account"
+msgstr "Account" 
+
+msgctxt "#30002"
+msgid "KEY"
+msgstr "KEY"
