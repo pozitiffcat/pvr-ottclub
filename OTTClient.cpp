@@ -51,21 +51,11 @@ void OTTClient::fetchChannels()
     delete rootJson;
 }
 
-OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
+void OTTClient::fetchPrograms(const std::string &channelId)
 {
-    Channel *channel;
-
-    for (int i = 0; i < m_channels.size(); ++i)
-    {
-        if (m_channels[i].id == channelId)
-        {
-            channel = &m_channels[i];
-            break;
-        }
-    }
-
-    if (!channel->isValid())
-        return Channel();
+    Channel *channel = channelById(channelId);
+    if (!channel)
+        return;
 
     std::string buffer = m_httpRequestBuilder->doGetRequest("http://ott.watch/api/channel/" + channel->id);
     std::stringstream bufferStream(buffer);
@@ -80,7 +70,7 @@ OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
     }
     catch (const std::runtime_error &)
     {
-        return Channel();
+        return;
     }
 
     for (int i = 0; i < arrayJson->count(); ++i)
@@ -102,26 +92,28 @@ OTTClient::Channel OTTClient::fetchPrograms(const std::string &channelId)
     }
 
     delete rootJson;
-    return *channel;
-}
-
-const OTTClient::Channel &OTTClient::channel(int index) const
-{
-    return m_channels[index];
-}
-
-OTTClient::Channel OTTClient::channelById(const std::string &id) const
-{
-    for (int i = 0; i < m_channels.size(); ++i)
-    {
-        if (m_channels[i].id == id)
-            return m_channels[i];
-    }
-
-    return Channel();
 }
 
 int OTTClient::channelsCount() const
 {
     return m_channels.size();
+}
+
+OTTClient::Channel *OTTClient::channelByIndex(int index)
+{
+    if (index < 0 || index >= m_channels.size())
+        return NULL;
+
+    return &m_channels[index];
+}
+
+OTTClient::Channel *OTTClient::channelById(const std::string &id)
+{
+    for (int i = 0; i < m_channels.size(); ++i)
+    {
+        if (m_channels[i].id == id)
+            return &m_channels[i];
+    }
+
+    return NULL;
 }

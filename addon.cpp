@@ -92,17 +92,17 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 
     for (int i = 0; i < ottClient->channelsCount(); ++i)
     {
-        const OTTClient::Channel channel = ottClient->channel(i);
+        const OTTClient::Channel *channel = ottClient->channelByIndex(i);
 
         PVR_CHANNEL channelEntry;
         memset(&channelEntry, 0, sizeof(PVR_CHANNEL));
 
         channelEntry.bIsRadio = false;
-        channelEntry.iChannelNumber = atoi(channel.id.c_str());
-        channelEntry.iUniqueId = atoi(channel.id.c_str());
-        strcpy(channelEntry.strChannelName, channel.name.c_str());
-        strcpy(channelEntry.strStreamURL, channel.url.c_str());
-        strcpy(channelEntry.strIconPath, channel.icon.c_str());
+        channelEntry.iChannelNumber = atoi(channel->id.c_str());
+        channelEntry.iUniqueId = atoi(channel->id.c_str());
+        strcpy(channelEntry.strChannelName, channel->name.c_str());
+        strcpy(channelEntry.strStreamURL, channel->url.c_str());
+        strcpy(channelEntry.strIconPath, channel->icon.c_str());
 
         PVR->TransferChannelEntry(handle, &channelEntry);
     }
@@ -112,11 +112,15 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 
 PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
 {
-    OTTClient::Channel channel = ottClient->fetchPrograms(to_string(channelEntry.iUniqueId));
+    ottClient->fetchPrograms(to_string(channelEntry.iUniqueId));
 
-    for (int i = 0; i < channel.programs.size(); ++i)
+    const OTTClient::Channel *channel = ottClient->channelById(to_string(channelEntry.iUniqueId));
+    if (!channel)
+        return PVR_ERROR_NO_ERROR;
+
+    for (int i = 0; i < channel->programs.size(); ++i)
     {
-        const OTTClient::Program &program = channel.programs[i];
+        const OTTClient::Program &program = channel->programs[i];
         if (program.time >= iStart && program.time <= iEnd)
         {
             EPG_TAG epgEntry;
@@ -124,7 +128,7 @@ PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry,
 
             epgEntry.startTime = program.time;
             epgEntry.endTime = program.timeTo;
-            epgEntry.iChannelNumber = atoi(channel.id.c_str());
+            epgEntry.iChannelNumber = atoi(channel->id.c_str());
             epgEntry.iUniqueBroadcastId = program.time;
             epgEntry.strTitle = program.name.c_str();
             epgEntry.strPlot = program.description.c_str();

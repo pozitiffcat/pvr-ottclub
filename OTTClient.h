@@ -25,24 +25,17 @@ public:
         std::string url;
         std::string icon;
         std::vector<Program> programs;
-
-        bool isValid() const
-        {
-            return !id.empty();
-        }
     };
 
 public:
     explicit OTTClient(HttpRequestBuilder *httpRequestBuilder);
 
     void fetchChannels();
-    Channel fetchPrograms(const std::string &channelId);
-
-    const Channel &channel(int index) const;
-    Channel &channelById(const std::string &id, const Channel &def);
-    Channel channelById(const std::string &id) const;
+    void fetchPrograms(const std::string &channelId);
 
     int channelsCount() const;
+    Channel *channelByIndex(int index);
+    Channel *channelById(const std::string &id);
 
 private:
     HttpRequestBuilder *m_httpRequestBuilder;

@@ -10,7 +10,7 @@ int main()
 
     for (int i = 0; i < c.channelsCount(); ++i)
     {
-        c.fetchPrograms(c.channel(i).id);
+        c.fetchPrograms(c.channelByIndex(i)->id);
     }
 
     return 0;
