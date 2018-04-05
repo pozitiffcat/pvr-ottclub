@@ -27,6 +27,13 @@ public:
         std::vector<Program> programs;
     };
 
+    struct Group
+    {
+        std::string clazz;
+        std::string name;
+        std::vector<Channel> channels;
+    };
+
 public:
     explicit OTTClient(HttpRequestBuilder *httpRequestBuilder);
 
@@ -37,9 +44,13 @@ public:
     Channel *channelByIndex(int index);
     Channel *channelById(const std::string &id);
 
+    int groupsCount() const;
+    Group *groupByIndex(int index);
+    Group *groupByName(const std::string &id);
+
 private:
     HttpRequestBuilder *m_httpRequestBuilder;
-    std::vector<Channel> m_channels;
+    std::vector<Group> m_groups;
 };
 
 #endif // OTT_CLIENT_H
