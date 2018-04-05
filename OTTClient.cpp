@@ -89,6 +89,8 @@ void OTTClient::fetchPrograms(const std::string &channelId)
         return;
     }
 
+    channel->programs.clear();
+
     for (int i = 0; i < arrayJson->count(); ++i)
     {
         try

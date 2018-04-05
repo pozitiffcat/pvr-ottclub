@@ -63,7 +63,7 @@ PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
 {
     pCapabilities->bHandlesDemuxing = false;
     pCapabilities->bHandlesInputStream = false;
-    pCapabilities->bSupportsChannelGroups = false;
+    pCapabilities->bSupportsChannelGroups = true;
     pCapabilities->bSupportsChannelScan = false;
     pCapabilities->bSupportsChannelSettings = false;
     pCapabilities->bSupportsEPG = true;
@@ -80,12 +80,16 @@ PVR_ERROR GetAddonCapabilities(PVR_ADDON_CAPABILITIES *pCapabilities)
 
 int GetChannelsAmount(void)
 {
+    if (ottClient->channelsCount() == 0)
+        ottClient->fetchChannels();
+
     return ottClient->channelsCount();
 }
 
 PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 {
-    ottClient->fetchChannels();
+    if (ottClient->channelsCount() == 0)
+        ottClient->fetchChannels();
 
     if (bRadio)
         return PVR_ERROR_NOT_IMPLEMENTED;
@@ -135,6 +139,54 @@ PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry,
 
             PVR->TransferEpgEntry(handle, &epgEntry);
         }
+    }
+
+    return PVR_ERROR_NO_ERROR;
+}
+
+int GetChannelGroupsAmount(void)
+{
+    if (ottClient->channelsCount() == 0)
+        ottClient->fetchChannels();
+
+    return ottClient->groupsCount();
+}
+
+PVR_ERROR GetChannelGroups(ADDON_HANDLE handle, bool bRadio)
+{
+    if (bRadio)
+        return PVR_ERROR_NOT_IMPLEMENTED;
+
+    for (int i = 0; i < ottClient->groupsCount(); ++i)
+    {
+        const OTTClient::Group *group = ottClient->groupByIndex(i);
+
+        PVR_CHANNEL_GROUP entry;
+        entry.iPosition = 0;
+        entry.bIsRadio = false;
+        strcpy(entry.strGroupName, group->name.c_str());
+
+        PVR->TransferChannelGroup(handle, &entry);
+    }
+
+    return PVR_ERROR_NO_ERROR;
+}
+
+PVR_ERROR GetChannelGroupMembers(ADDON_HANDLE handle, const PVR_CHANNEL_GROUP& groupEntry)
+{
+    const OTTClient::Group *group = ottClient->groupByName(groupEntry.strGroupName);
+    if (!group)
+        return PVR_ERROR_NO_ERROR;
+
+    for (int i = 0; i < group->channels.size(); ++i)
+    {
+        const OTTClient::Channel &channel = group->channels[i];
+        PVR_CHANNEL_GROUP_MEMBER entry;
+        entry.iChannelNumber = atoi(channel.id.c_str());
+        entry.iChannelUniqueId = atoi(channel.id.c_str());
+        strcpy(entry.strGroupName, group->name.c_str());
+
+        PVR->TransferChannelGroupMember(handle, &entry);
     }
 
     return PVR_ERROR_NO_ERROR;
@@ -215,21 +267,6 @@ PVR_ERROR GetDriveSpace(long long* iTotal, long long* iUsed)
 }
 
 PVR_ERROR CallMenuHook(const PVR_MENUHOOK& menuhook, const PVR_MENUHOOK_DATA &item)
-{
-    return PVR_ERROR_NOT_IMPLEMENTED;
-}
-
-int GetChannelGroupsAmount(void)
-{
-    return 0;
-}
-
-PVR_ERROR GetChannelGroups(ADDON_HANDLE handle, bool bRadio)
-{
-    return PVR_ERROR_NOT_IMPLEMENTED;
-}
-
-PVR_ERROR GetChannelGroupMembers(ADDON_HANDLE handle, const PVR_CHANNEL_GROUP& group)
 {
     return PVR_ERROR_NOT_IMPLEMENTED;
 }
