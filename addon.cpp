@@ -50,14 +50,7 @@ ADDON_STATUS ADDON_Create(void *callbacks, void *props)
 ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
 {
     if (strcmp("ott_key", settingName) == 0)
-    {
-        ottClient->setKey(static_cast<const char *>(settingValue));
-        PVR->TriggerChannelUpdate();
-        PVR->TriggerChannelGroupsUpdate();
-
-        for (int i= 0; i < ottClient->channelsCount(); +i)
-            PVR->TriggerEpgUpdate(atoi(ottClient->channelByIndex(i)->id.c_str()));
-    }
+        return ADDON_STATUS_NEED_RESTART;
 
     return ADDON_STATUS_OK;
 }
@@ -133,11 +126,11 @@ PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 
 PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL& channelEntry, time_t iStart, time_t iEnd)
 {
-    ottClient->fetchPrograms(to_string(channelEntry.iUniqueId));
-
     const OTTClient::Channel *channel = ottClient->channelById(to_string(channelEntry.iUniqueId));
     if (!channel)
         return PVR_ERROR_NO_ERROR;
+
+    ottClient->fetchPrograms(to_string(channelEntry.iUniqueId));
 
     for (int i = 0; i < channel->programs.size(); ++i)
     {
@@ -173,6 +166,9 @@ PVR_ERROR GetChannelGroups(ADDON_HANDLE handle, bool bRadio)
 {
     if (bRadio)
         return PVR_ERROR_NOT_IMPLEMENTED;
+
+    if (ottClient->channelsCount() == 0)
+        ottClient->fetchChannels();
 
     for (int i = 0; i < ottClient->groupsCount(); ++i)
     {

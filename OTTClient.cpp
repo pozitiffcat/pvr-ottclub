@@ -15,6 +15,13 @@ OTTClient::OTTClient(HttpRequestBuilder *httpRequestBuilder, const std::string &
 {
 }
 
+void OTTClient::clear()
+{
+    m_groups.clear();
+    m_channelByIdIndexes.clear();
+    m_channelIndexes.clear();
+}
+
 void OTTClient::setKey(const std::string &key)
 {
     m_key = key;
@@ -22,7 +29,7 @@ void OTTClient::setKey(const std::string &key)
 
 void OTTClient::fetchChannels()
 {
-    m_groups.clear();
+    clear();
 
     if (m_key.empty())
         return;

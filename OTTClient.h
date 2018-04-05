@@ -44,6 +44,7 @@ public:
 public:
     OTTClient(HttpRequestBuilder *httpRequestBuilder, const std::string &key);
 
+    void clear();
     void setKey(const std::string &key);
 
     void fetchChannels();
