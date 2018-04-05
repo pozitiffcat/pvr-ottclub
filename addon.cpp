@@ -54,6 +54,9 @@ ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
         ottClient->setKey(static_cast<const char *>(settingValue));
         PVR->TriggerChannelUpdate();
         PVR->TriggerChannelGroupsUpdate();
+
+        for (int i= 0; i < ottClient->channelsCount(); +i)
+            PVR->TriggerEpgUpdate(atoi(ottClient->channelByIndex(i)->id.c_str()));
     }
 
     return ADDON_STATUS_OK;
