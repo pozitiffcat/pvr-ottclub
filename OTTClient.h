@@ -1,6 +1,7 @@
 #ifndef OTT_CLIENT_H
 #define OTT_CLIENT_H
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,12 @@ public:
         std::vector<Channel> channels;
     };
 
+    struct GroupChannelIndex
+    {
+        int groupIndex;
+        int channelIndex;
+    };
+
 public:
     OTTClient(HttpRequestBuilder *httpRequestBuilder, const std::string &key);
 
@@ -54,6 +61,9 @@ private:
     HttpRequestBuilder *m_httpRequestBuilder;
     std::string m_key;
     std::vector<Group> m_groups;
+
+    std::map<std::string, GroupChannelIndex> m_channelByIdIndexes;
+    std::vector<GroupChannelIndex> m_channelIndexes;
 };
 
 #endif // OTT_CLIENT_H

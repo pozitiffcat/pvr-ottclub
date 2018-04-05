@@ -55,11 +55,28 @@ void OTTClient::fetchChannels()
             channel.url = "http://spacetv.in/stream/" + m_key + "/" + channel.id + ".m3u8";
             channel.icon = "http://ott.watch/images/" + channelObject->value("img")->as_string();
 
+            int groupIndex = -1;
             Group *group = groupByName(categoryObject->value("name")->as_string());
+
+            for (int i = 0; i < m_groups.size(); ++i)
+            {
+                if (m_groups[i].name == categoryObject->value("name")->as_string())
+                {
+                    groupIndex = i;
+                    group = &m_groups[i];
+                    break;
+                }
+            }
 
             if (group)
             {
                 group->channels.push_back(channel);
+
+                GroupChannelIndex index;
+                index.groupIndex = groupIndex;
+                index.channelIndex = group->channels.size() - 1;
+                m_channelIndexes.push_back(index);
+                m_channelByIdIndexes[channel.id] = index;
             }
             else
             {
@@ -68,6 +85,12 @@ void OTTClient::fetchChannels()
                 newGroup.name = categoryObject->value("name")->as_string();
                 newGroup.channels.push_back(channel);
                 m_groups.push_back(newGroup);
+
+                GroupChannelIndex index;
+                index.groupIndex = m_groups.size() - 1;
+                index.channelIndex = 0;
+                m_channelIndexes.push_back(index);
+                m_channelByIdIndexes[channel.name] = index;
             }
         }
         catch (const std::runtime_error &)
@@ -125,41 +148,39 @@ void OTTClient::fetchPrograms(const std::string &channelId)
 
 int OTTClient::channelsCount() const
 {
-    int count = 0;
-
-    for (int i = 0; i < m_groups.size(); ++i)
-        count += m_groups[i].channels.size();
-
-    return count;
+    return m_channelIndexes.size();
 }
 
 OTTClient::Channel *OTTClient::channelByIndex(int index)
 {
-    int pos = 0;
+    const int groupIndex = m_channelIndexes[index].groupIndex;
+    const int channelIndex = m_channelIndexes[index].channelIndex;
 
-    for (int i = 0; i < m_groups.size(); ++i)
-    {
-        if (pos + m_groups[i].channels.size() > index)
-            return &m_groups[i].channels[index - pos];
+    if (groupIndex < 0 || groupIndex >= m_groups.size())
+        return NULL;
 
-        pos += m_groups[i].channels.size();
-    }
+    if (channelIndex < 0 || channelIndex >= m_groups[groupIndex].channels.size())
+        return NULL;
 
-    return NULL;
+    return &m_groups[groupIndex].channels[channelIndex];
 }
 
 OTTClient::Channel *OTTClient::channelById(const std::string &id)
 {
-    for (int i = 0; i < m_groups.size(); ++i)
-    {
-        for (int j = 0; j < m_groups[i].channels.size(); ++j)
-        {
-            if (m_groups[i].channels[j].id == id)
-                return &m_groups[i].channels[j];
-        }
-    }
+    std::map<std::string, GroupChannelIndex>::iterator it = m_channelByIdIndexes.find(id);
+    if (it == m_channelByIdIndexes.end())
+        return NULL;
 
-    return NULL;
+    const int groupIndex = it->second.groupIndex;
+    const int channelIndex = it->second.channelIndex;
+
+    if (groupIndex < 0 || groupIndex >= m_groups.size())
+        return NULL;
+
+    if (channelIndex < 0 || channelIndex >= m_groups[groupIndex].channels.size())
+        return NULL;
+
+    return &m_groups[groupIndex].channels[channelIndex];
 }
 
 int OTTClient::groupsCount() const
