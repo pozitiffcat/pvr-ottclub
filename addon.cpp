@@ -38,8 +38,23 @@ ADDON_STATUS ADDON_Create(void *callbacks, void *props)
         return ADDON_STATUS_PERMANENT_FAILURE;
     }
 
+    char ottKey[1024];
+    XBMC->GetSetting("ott_key", ottKey);
+
     httpRequestBuilder = new XBMCHttpRequestBuilder(XBMC);
-    ottClient = new OTTClient(httpRequestBuilder);
+    ottClient = new OTTClient(httpRequestBuilder, ottKey);
+
+    return ADDON_STATUS_OK;
+}
+
+ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
+{
+    if (strcmp("ott_key", settingName) == 0)
+    {
+        ottClient->setKey(static_cast<const char *>(settingValue));
+        PVR->TriggerChannelUpdate();
+        PVR->TriggerChannelGroupsUpdate();
+    }
 
     return ADDON_STATUS_OK;
 }
@@ -88,8 +103,7 @@ int GetChannelsAmount(void)
 
 PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio)
 {
-    if (ottClient->channelsCount() == 0)
-        ottClient->fetchChannels();
+    ottClient->fetchChannels();
 
     if (bRadio)
         return PVR_ERROR_NOT_IMPLEMENTED;
@@ -213,11 +227,6 @@ bool ADDON_HasSettings()
 unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
 {
     return 0;
-}
-
-ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
-{
-    return ADDON_STATUS_OK;
 }
 
 void ADDON_FreeSettings()

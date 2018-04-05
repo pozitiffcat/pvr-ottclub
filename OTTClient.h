@@ -35,7 +35,9 @@ public:
     };
 
 public:
-    explicit OTTClient(HttpRequestBuilder *httpRequestBuilder);
+    OTTClient(HttpRequestBuilder *httpRequestBuilder, const std::string &key);
+
+    void setKey(const std::string &key);
 
     void fetchChannels();
     void fetchPrograms(const std::string &channelId);
@@ -50,6 +52,7 @@ public:
 
 private:
     HttpRequestBuilder *m_httpRequestBuilder;
+    std::string m_key;
     std::vector<Group> m_groups;
 };
 

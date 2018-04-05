@@ -5,7 +5,7 @@
 int main()
 {
     CurlHttpRequestBuilder httpBuilder;
-    OTTClient c(&httpBuilder);
+    OTTClient c(&httpBuilder, "TEST");
     c.fetchChannels();
 
     for (int i = 0; i < c.channelsCount(); ++i)

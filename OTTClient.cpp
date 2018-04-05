@@ -9,13 +9,24 @@
 
 #include "HttpRequestBuilder.h"
 
-OTTClient::OTTClient(HttpRequestBuilder *httpRequestBuilder)
-    : m_httpRequestBuilder(httpRequestBuilder)
+OTTClient::OTTClient(HttpRequestBuilder *httpRequestBuilder, const std::string &key)
+    : m_httpRequestBuilder(httpRequestBuilder),
+      m_key(key)
 {
+}
+
+void OTTClient::setKey(const std::string &key)
+{
+    m_key = key;
 }
 
 void OTTClient::fetchChannels()
 {
+    m_groups.clear();
+
+    if (m_key.empty())
+        return;
+
     std::string buffer = m_httpRequestBuilder->doGetRequest("http://ott.watch/api/channel_now");
     std::stringstream bufferStream(buffer);
 
@@ -41,7 +52,7 @@ void OTTClient::fetchChannels()
             Channel channel;
             channel.id = channelObject->value("ch_id")->as_string();
             channel.name = channelObject->value("channel_name")->as_string();
-            channel.url = "http://spacetv.in/stream/BES5W7VUMB/" + channel.id + ".m3u8";
+            channel.url = "http://spacetv.in/stream/" + m_key + "/" + channel.id + ".m3u8";
             channel.icon = "http://ott.watch/images/" + channelObject->value("img")->as_string();
 
             Group *group = groupByName(categoryObject->value("name")->as_string());
